@@ -20,6 +20,7 @@ function clear_monitor {
 
 if [ -f runGPM.log ]; then rm -f runGPM.log; fi
 if [ -f waveform.log ]; then rm -f waveform.log; fi
+if [ -f bad.list ]; then rm -f bad.list; fi
 
 CONFIG_FILE=/home/argonshef/CAENHV/config.conf
 
@@ -36,7 +37,9 @@ checkreturn cd /home/argonshef/gpm_work/
 
 arr_cnt=0
 
-for Vct in 460 455 450 445 440 435 430 425
+VCT_VALUES="$@"
+
+for Vct in $VCT_VALUES
 do
     Vtopstrip=`expr 640`
     Vcathode=`expr $Vtopstrip + $Vct`
@@ -95,13 +98,16 @@ EOF
     sethv --monitor
     RETURN=$?
     echo "Taking data..."
-    badvoltage=0
     while [ $RETURN -eq 0 ]; do
 	sleep 5
 	clear_monitor
 	sethv --monitor
 	let RETURN=$?
 	badvoltage=$RETURN
+	if [ $badvoltage -eq 1 ]; then
+	    echo "$Vct" >> bad.list
+	    break
+	fi
 	echo "$(tail -n 1 runGPM.log)"
 	ps $RUN_PID &> /dev/null
 	STILL_RUNNING=$?
@@ -110,11 +116,6 @@ EOF
 	fi
     done
     
-    if [ $badvoltage -eq 1 ]; then 
-	echo "$Vct" >> bad.list
-	continue
-    fi
-
     wait $RUN_PID
 
     DATA_FILE=$(ls -t GPM*.dat | head -n1)
@@ -152,6 +153,13 @@ for (( it=0; it<$arr_cnt; it++ )); do
         rm -f ${dat_file[$it]}
     fi
 done
+
+if [[ -s bad.list ]]; then
+    while read Vct; do
+	REDO_VOLTAGES="${Vct} ${REDO_VOLTAGES}"
+    done <bad.list
+    bash do_run $REDO_VOLTAGES
+fi
 
 exit 0
 
