@@ -99,7 +99,7 @@ EOF
     RETURN=$?
     echo "Taking data..."
     while [ $RETURN -eq 0 ]; do
-	sleep 5
+	sleep 1
 	clear_monitor
 	sethv --monitor
 	let RETURN=$?
