@@ -18,51 +18,53 @@ function clear_monitor {
     done
 }
 
-if [ -f runGPM.log ]; then rm -f runGPM.log; fi
-if [ -f waveform.log ]; then rm -f waveform.log; fi
+cd /home/argonshef/gpm_work/
+
+#if [ -f runGPM.log ]; then rm -f runGPM.log; fi
+#if [ -f waveform.log ]; then rm -f waveform.log; fi
 if [ -f bad.list ]; then rm -f bad.list; fi
 
-CONFIG_FILE=/home/argonshef/CAENHV/config.conf
+CONFIG_FILE=config.conf
 
-checkreturn cd /home/argonshef/AgMD2_GPM/ 
-checkreturn make clean
-checkreturn make
-checkreturn cd /home/argonshef/ProcessGPM/
-checkreturn make clean
-checkreturn make
-checkreturn cd /home/argonshef/CAENHV/
-checkreturn make clean
-checkreturn make
-checkreturn cd /home/argonshef/gpm_work/
+#checkreturn cd /home/argonshef/AgMD2_GPM/ 
+#checkreturn make clean
+#checkreturn make
+#checkreturn cd /home/argonshef/ProcessGPM/
+#checkreturn make clean
+#checkreturn make
+#checkreturn cd /home/argonshef/CAENHV/
+#checkreturn make clean
+#checkreturn make
+#checkreturn cd /home/argonshef/gpm_work/
 
 arr_cnt=0
 
-VCT_VALUES="$@"
+VOLT_VALUES="$@"
 
-for Vct in $VCT_VALUES
+for Volt in $VOLT_VALUES
 do
-    Vtopstrip=`expr 640`
-    Vcathode=`expr $Vtopstrip + $Vct`
-    Vanode=`expr $Vcathode + 125`
-    Vplane=`expr $Vcathode`
+    #Vtopstrip=`expr 640`
+    #Vcathode=`expr $Vtopstrip + $Volt`
+    #Vanode=`expr $Vcathode + 125`
+    #Vplane=`expr $Vcathode`
 
-    cat > $CONFIG_FILE <<EOF
+    #cat > $CONFIG_FILE <<EOF
 # {P or N} {ch. num.} {VSET} {ISET} {PW} {TRIP_TIME} {SVMAX} {RAMP_DOWN} {RAMP_UP} {PWDOWN} {IMON_RANGE}
 
-N 0 685  0.500 1 10 3000 50 5 1 0
-N 1 685  0.500 1 10 3000 50 5 1 0
-N 2 90   0.500 1 10 3000 50 5 1 0
-N 3 0    0.500 1 10 3000 50 5 1 0
-N 4 0    0.500 0 10 3000 50 5 1 0
-N 5 0    0.500 0 10 3000 50 5 1 0
-P 0 550  0.500 1 10 3000 50 5 1 0
-P 1 0    0.500 0 0  10   50 5 0 0
-P 2 ${Vtopstrip}  0.500 1 10 3000 50 5 1 0
-P 3 ${Vcathode} 0.500 1 10 3000 50 5 1 0
-P 4 ${Vanode} 0.500 1 10 3000 50 5 1 0
-P 5 ${Vplane} 0.500 1 10 3000 50 5 1 0
-EOF
-
+#N 0 685  0.500 1 10 3000 50 5 1 0
+#N 1 685  0.500 1 10 3000 50 5 1 0
+#N 2 90   0.500 1 10 3000 50 5 1 0
+#N 3 0    0.500 1 10 3000 50 5 1 0
+#N 4 0    0.500 0 10 3000 50 5 1 0
+#N 5 0    0.500 0 10 3000 50 5 1 0
+#P 0 550  0.500 1 10 3000 50 5 1 0
+#P 1 0    0.500 0 0  10   50 5 0 0
+#P 2 ${Vtopstrip}  0.500 1 10 3000 50 5 1 0
+#P 3 ${Vcathode} 0.500 1 10 3000 50 5 1 0
+#P 4 ${Vanode} 0.500 1 10 3000 50 5 1 0
+#P 5 ${Vplane} 0.500 1 10 3000 50 5 1 0
+#EOF
+    ./increasevolt_THGEMonly.sh $Volt
     
     checkreturn sethv --setconfig $CONFIG_FILE &
     wait $!
@@ -94,9 +96,9 @@ EOF
 
     /home/argonshef/AgMD2_GPM/runGPM >>runGPM.log 2>&1 &
     RUN_PID=$!
-    clear_monitor
-    sethv --monitor
-    RETURN=$?
+    #clear_monitor
+    #sethv --monitor
+    RETURN=0
     echo "Taking data..."
     while [ $RETURN -eq 0 ]; do
 	sleep 1
@@ -105,7 +107,8 @@ EOF
 	let RETURN=$?
 	badvoltage=$RETURN
 	if [ $badvoltage -eq 1 ]; then
-	    echo "$Vct" >> bad.list
+	    echo "$Volt" >> bad.list
+	    kill $RUN_PID
 	    break
 	fi
 	echo "$(tail -n 1 runGPM.log)"
@@ -119,14 +122,14 @@ EOF
     wait $RUN_PID
 
     DATA_FILE=$(ls -t GPM*.dat | head -n1)
-    NEW_DATA_FILE=$(basename $DATA_FILE .dat)_${Vct}VCT.dat
+    NEW_DATA_FILE=$(basename $DATA_FILE .dat)_${Volt}.dat
     mv $DATA_FILE $NEW_DATA_FILE
     if [ ! -f $(basename $NEW_DATA_FILE .dat) ]; then
-	/home/argonshef/ProcessGPM/waveform $NEW_DATA_FILE >>waveform.log 2>&1 &
+	/home/argonshef/ProcessGPM/waveform $NEW_DATA_FILE >> waveform.log 2>&1 &
 	ana_pids[$arr_cnt]=$!
 	dat_file[$arr_cnt]=$NEW_DATA_FILE
     fi
-    wait ${ana_pids[$arr_cnt]}
+    #wait ${ana_pids[$arr_cnt]}
 
 #    echo "ana_pids[@]"${ana_pids[@]}
 
@@ -155,8 +158,8 @@ for (( it=0; it<$arr_cnt; it++ )); do
 done
 
 if [[ -s bad.list ]]; then
-    while read Vct; do
-	REDO_VOLTAGES="${Vct} ${REDO_VOLTAGES}"
+    while read Volt; do
+	REDO_VOLTAGES="${Volt} ${REDO_VOLTAGES}"
     done <bad.list
     bash do_run $REDO_VOLTAGES
 fi
