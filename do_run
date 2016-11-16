@@ -18,7 +18,7 @@ function clear_monitor {
     done
 }
 
-cd /home/argonshef/gpm_work/
+cd /home/argonshef/Do_GPM/
 
 #if [ -f runGPM.log ]; then rm -f runGPM.log; fi
 #if [ -f waveform.log ]; then rm -f waveform.log; fi
@@ -35,7 +35,7 @@ CONFIG_FILE=config.conf
 #checkreturn cd /home/argonshef/CAENHV/
 #checkreturn make clean
 #checkreturn make
-#checkreturn cd /home/argonshef/gpm_work/
+#checkreturn cd /home/argonshef/Do_GPM/
 
 arr_cnt=0
 
