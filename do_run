@@ -64,8 +64,9 @@ do
 #P 4 ${Vanode} 0.500 1 10 3000 50 5 1 0
 #P 5 ${Vplane} 0.500 1 10 3000 50 5 1 0
 #EOF
-    ./increasevolt_THGEMonly.sh $Volt
-    
+    #./increasevolt_THGEMonly.sh $Volt
+    ./increasevolt_default.sh $Volt
+
     checkreturn sethv --setconfig $CONFIG_FILE &
     wait $!
     checkreturn sethv --getconfig $CONFIG_FILE
@@ -124,8 +125,8 @@ do
     DATA_FILE=$(ls -t GPM*.dat | head -n1)
     NEW_DATA_FILE=$(basename $DATA_FILE .dat)_${Volt}.dat
     mv $DATA_FILE $NEW_DATA_FILE
-    if [ ! -f $(basename $NEW_DATA_FILE .dat) ]; then
-	/home/argonshef/ProcessGPM/waveform $NEW_DATA_FILE >> waveform.log 2>&1 &
+    if [ ! -f $(basename $NEW_DATA_FILE .dat).root ]; then
+	/home/argonshef/ProcessGPMPMT/waveform $NEW_DATA_FILE 0 0 0 0 0 0 1 3 >> waveform.log 2>&1 &
 	ana_pids[$arr_cnt]=$!
 	dat_file[$arr_cnt]=$NEW_DATA_FILE
     fi
@@ -137,9 +138,9 @@ do
 	ps ${ana_pids[$it]} &> /dev/null
 	STILL_RUNNING=$?
 	#echo "still_running="$STILL_RUNNING
-	if [ $STILL_RUNNING -eq 1 ]; then
-	    rm -f ${dat_file[$it]}
-	fi
+	#if [ $STILL_RUNNING -eq 1 ]; then
+	#    rm -f ${dat_file[$it]}
+	#fi
     done
 
     ((arr_cnt++))
@@ -152,9 +153,9 @@ for (( it=0; it<$arr_cnt; it++ )); do
     ps ${ana_pids[$it]} &> /dev/null
     STILL_RUNNING=$?
     #echo "still_running="$STILL_RUNNING
-    if [ $STILL_RUNNING -eq 1 ]; then
-        rm -f ${dat_file[$it]}
-    fi
+    #if [ $STILL_RUNNING -eq 1 ]; then
+    #    rm -f ${dat_file[$it]}
+    #fi
 done
 
 if [[ -s bad.list ]]; then
